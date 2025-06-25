@@ -1,5 +1,3 @@
-<img src="https://invoice.kitchen/chef.svg" width="200">
+# Invoice Kitchen but less fluff idk
+Simple and WYSIWYG invoicing tool that i use. run `npm run build` then `npm run start`
 
-# Invoice Kitchen
-
-Simple and free WYSIWYG invoicing tool
