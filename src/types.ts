@@ -14,8 +14,6 @@ export type AppState = {
     name: string;
     value: string;
   };
-  taxRate: number | null;
-  taxEnabled: boolean;
   logo: string | null;
   businessName: string;
   businessHeaderFreeText: string;
@@ -30,6 +28,6 @@ export type AppState = {
 export type InvoiceLineItem = {
   name: string;
   description: string;
-  quantity?: number;
-  price?: number;
+  amount?: number;
+  displayAmount?: string;
 };

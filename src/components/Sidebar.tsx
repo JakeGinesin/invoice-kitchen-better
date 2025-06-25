@@ -1,48 +1,36 @@
 'use client';
+import React from 'react';
+import { Cross1Icon } from '@radix-ui/react-icons';
 import { CurrencySelector } from './CurrencySelector';
+import { LogoSelector } from './LogoSelector';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from './ui/accordion';
-import { Cross1Icon } from '@radix-ui/react-icons';
-import { cx } from './InvoiceBuilder';
 import { useAppStateStore } from '@/store';
-import { TaxOption } from './TaxOption';
-import { LogoSelector } from './LogoSelector';
-import { Button } from '@/components/ui/button';
-import { Printer, SaveIcon } from 'lucide-react';
 
 export function Sidebar() {
-  const { setState, state } = useAppStateStore();
+  const { state, setState } = useAppStateStore();
 
   return (
     <div
-      id="sidebar"
-      className={cx(
-        // todo: transition
-        'h-full min-w-[300px] w-[300px] bg-white text-black overflow-auto',
-        !state.sidebarOpen ? 'hidden' : '',
-      )}
+      className={`fixed right-0 top-0 h-full w-80 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-40 ${
+        state.sidebarOpen ? 'translate-x-0' : 'translate-x-full'
+      }`}
     >
-      {/* Header */}
-      <div className="flex justify-between items-center px-4 py-4 border-b border-gray-200">
-        <div>
-          <span className="font-semibold text-md">Invoice Kitchen</span>
-        </div>
-        <button onClick={() => setState('sidebarOpen', false)}>
+      <div className="flex items-center justify-between p-4 border-b">
+        <h2 className="text-lg font-semibold">Settings</h2>
+        <button
+          onClick={() => setState('sidebarOpen', false)}
+          className="p-1 hover:bg-gray-100 rounded"
+        >
           <Cross1Icon className="w-5 h-5" />
         </button>
       </div>
       <div className="px-4 py-2">
         <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="item-0">
-            <AccordionTrigger>Tax</AccordionTrigger>
-            <AccordionContent>
-              <TaxOption />
-            </AccordionContent>
-          </AccordionItem>
           <AccordionItem value="item-1">
             <AccordionTrigger>Currency</AccordionTrigger>
             <AccordionContent>
@@ -56,16 +44,6 @@ export function Sidebar() {
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-        {/* <Button className="w-full my-2" onClick={() => window.print()}>
-          {' '}
-          <Printer className="mr-2 h-4 " />
-          Print
-        </Button>
-        <Button className="w-full my-2" onClick={printMe}>
-          {' '}
-          <SaveIcon className="mr-2 h-4 " />
-          PDF
-        </Button> */}
       </div>
     </div>
   );

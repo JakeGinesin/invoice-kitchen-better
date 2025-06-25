@@ -18,12 +18,10 @@ function presetInvoice(): AppState {
       name: 'United States Dollar',
       value: 'USD',
     },
-    taxRate: 0.1,
-    taxEnabled: true,
-    logo: SWIFTLY_ICON,
-    businessName: 'Swiftly',
+    logo: null,
+    businessName: 'Acme Corporation',
     businessHeaderFreeText:
-      '123 Main St\nSan Francisco\nCA 94110\naccounts@swiftly.nz',
+      'John Smith\n123 Main St, San Francisco, CA 94110\nUnited States\njohn@johnsmith.com\n+1 (555) 123-4567',
     headerFields: [
       {
         label: 'INVOICE #',
@@ -38,7 +36,7 @@ function presetInvoice(): AppState {
         placeholder: '01/01/2021',
       },
     ],
-    invoiceSubheader: 'TAX INVOICE',
+    invoiceSubheader: 'INVOICE',
     invoiceSubheaderFreeText:
       'To: John Smith\n123 Main St, San Francisco, CA 94110\nUnited States\njohn@johnsmith.com',
     notesLabel: 'NOTES',
@@ -48,20 +46,17 @@ function presetInvoice(): AppState {
       {
         name: 'Website Design (Hours)',
         description: 'Design for Johns website, includes 3 revisions.',
-        quantity: 18,
-        price: 70,
+        amount: 70,
       },
       {
         name: 'Website Development (Hours)',
         description: 'Wordpress development',
-        quantity: 30,
-        price: 75,
+        amount: 75,
       },
       {
         name: 'Website Hosting (1 year)',
         description: '',
-        quantity: 1,
-        price: 100,
+        amount: 100,
       },
     ],
   };
@@ -77,8 +72,6 @@ function defaultInvoice(): AppState {
       name: 'United States Dollar',
       value: 'USD',
     },
-    taxRate: null,
-    taxEnabled: true,
     logo: null,
 
     businessName: '',
@@ -97,7 +90,7 @@ function defaultInvoice(): AppState {
         placeholder: '01/01/2021',
       },
     ],
-    invoiceSubheader: 'TAX INVOICE',
+    invoiceSubheader: 'INVOICE',
     invoiceSubheaderFreeText: '',
     notesLabel: 'NOTES',
     notesFreeText: '',
@@ -130,22 +123,6 @@ class AppStateStore {
     makeAutoObservable(this);
   }
 
-  enableTaxNumber = () => {
-    this.setState('headerFields', [
-      ...this.state.headerFields,
-      {
-        label: 'TAX NUMBER',
-        labelPlaceholder: 'TAX NUMBER',
-        value: '',
-        placeholder: '123456789',
-      },
-    ]);
-  };
-
-  disableTaxNumber = () => {
-    this.setState('headerFields', this.state.headerFields.slice(0, 2));
-  };
-
   formatAsCurrency = (value: number) => {
     return Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -158,17 +135,75 @@ class AppStateStore {
   };
 
   migrateAndValidateState = (parsedState: any) => {
-    if (parsedState.version === CURRENT_STATE_VERSION) {
+    try {
+      if (!parsedState) {
+        return presetInvoice();
+      }
+      
+      if (parsedState.version === CURRENT_STATE_VERSION) {
+        // Remove any tax-related properties if they exist
+        if (parsedState.taxRate !== undefined) {
+          delete parsedState.taxRate;
+        }
+        if (parsedState.taxEnabled !== undefined) {
+          delete parsedState.taxEnabled;
+        }
+        
+        // Clean up line items to remove quantity
+        if (parsedState.lineItems && Array.isArray(parsedState.lineItems)) {
+          parsedState.lineItems = parsedState.lineItems.map((item: any) => {
+            const cleanItem: any = {
+              name: item.name || '',
+              description: item.description || '',
+            };
+            // Handle both old 'price' and new 'amount' properties
+            const amountValue = item.amount !== undefined ? item.amount : item.price;
+            if (amountValue !== undefined && !isNaN(Number(amountValue))) {
+              cleanItem.amount = Number(amountValue);
+            }
+            return cleanItem;
+          });
+        }
+        
+        return parsedState;
+      }
+      
+      if (Number(parsedState.version) < 3) {
+        // Remove tax-related properties and update version
+        if (parsedState.taxRate !== undefined) {
+          delete parsedState.taxRate;
+        }
+        if (parsedState.taxEnabled !== undefined) {
+          delete parsedState.taxEnabled;
+        }
+        
+        // Clean up line items to remove quantity
+        if (parsedState.lineItems && Array.isArray(parsedState.lineItems)) {
+          parsedState.lineItems = parsedState.lineItems.map((item: any) => {
+            const cleanItem: any = {
+              name: item.name || '',
+              description: item.description || '',
+            };
+            // Handle both old 'price' and new 'amount' properties
+            const amountValue = item.amount !== undefined ? item.amount : item.price;
+            if (amountValue !== undefined && !isNaN(Number(amountValue))) {
+              cleanItem.amount = Number(amountValue);
+            }
+            return cleanItem;
+          });
+        }
+        
+        return {
+          ...parsedState,
+          version: CURRENT_STATE_VERSION,
+        };
+      }
+      
       return parsedState;
+    } catch (error) {
+      console.error('Migration failed, falling back to preset invoice:', error);
+      return presetInvoice();
     }
-    if (Number(parsedState.version) < 3) {
-      return {
-        ...parsedState,
-        taxEnabled: parsedState.taxRate !== null ? true : false,
-        version: CURRENT_STATE_VERSION,
-      };
-    }
-    return;
   };
 
   loadFromLocalStorage = () => {

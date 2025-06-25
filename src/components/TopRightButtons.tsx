@@ -51,21 +51,15 @@ const NewButton = () => {
 };
 
 const PrintButton = () => {
-  const [open, setOpen] = React.useState(false);
-
   return (
-    <>
-      <button
-        className="p-4 flex items-center gap-2 hover:text-purple-700 "
-        onClick={() => {
-          window.print();
-          setOpen(true);
-        }}
-      >
-        <PrinterIcon /> Print
-      </button>
-      <AfterPrintPdfDialog open={open} setOpen={setOpen} />
-    </>
+    <button
+      className="p-4 flex items-center gap-2 hover:text-purple-700 "
+      onClick={() => {
+        window.print();
+      }}
+    >
+      <PrinterIcon /> Print
+    </button>
   );
 };
 
@@ -319,21 +313,6 @@ const EmailDialog = ({
     </Dialog>
   );
 };
-
-const AfterPrintPdfDialog = ({
-  open,
-  setOpen,
-}: {
-  open: boolean;
-  setOpen: (open: boolean) => void;
-}) => (
-  <EmailDialog
-    open={open}
-    setOpen={setOpen}
-    title="Thanks for using Invoice Kitchen!"
-    description="Enter your email below and we'll send you a PDF copy of your invoice for your records."
-  />
-);
 
 const EmailMePdfDialog = ({
   open,

@@ -21,7 +21,6 @@ import { useMediaQuery } from 'react-responsive';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
-import { NumericFormat } from 'react-number-format';
 
 const driverObj = driver({
   showProgress: true,
@@ -56,7 +55,7 @@ const driverObj = driver({
       popover: {
         title: 'Invoice Menu',
         description:
-          'Here you can set tax percentage, select currency for your invoice, and update your company logo.',
+          'Here you can set currency for your invoice and update your company logo.',
         position: 'right',
       },
     },
@@ -518,25 +517,17 @@ const InvoiceItemsTable: React.FC = () => {
     setLineItems(newLineItems);
   };
 
-  const subtotal = lineItems.reduce(
-    (acc, lineItem) => acc + (lineItem.price || 0) * (lineItem.quantity || 0),
+  const total = lineItems.reduce(
+    (acc, lineItem) => acc + (lineItem.amount || 0),
     0,
   );
-  const taxPercent = state.taxRate;
-  const tax = state.taxEnabled ? subtotal * (taxPercent || 0) : 0;
-  const total = subtotal + tax;
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <div>
-        <div className="border-y border-gray-300 grid grid-cols-8 py-2">
-          <span className="col-span-5 uppercase tracking-wider font-semibold text-sm">
+        <div className="border-y border-gray-300 grid grid-cols-5 py-2">
+          <span className="col-span-4 uppercase tracking-wider font-semibold text-sm">
             Item
-          </span>
-          <span className="col-span-1 uppercase tracking-wider font-semibold text-sm">
-            Qty
-          </span>
-          <span className="col-span-1 uppercase tracking-wider font-semibold text-sm">
-            Price
           </span>
           <span className="col-span-1 uppercase tracking-wider font-semibold text-sm">
             Amount
@@ -556,7 +547,7 @@ const InvoiceItemsTable: React.FC = () => {
                       ref={provided2.innerRef}
                       {...provided2.draggableProps}
                       key={index}
-                      className="relative border-b border-gray-300 grid grid-cols-8 py-2 group"
+                      className="relative border-b border-gray-300 grid grid-cols-5 py-2 group"
                     >
                       <div className="absolute left-0 transform -translate-x-full opacity-0 group-hover:opacity-100 flex items-center">
                         <button
@@ -577,7 +568,7 @@ const InvoiceItemsTable: React.FC = () => {
                           <DragHandleHorizontalIcon />
                         </div>
                       </div>
-                      <div className="col-span-5">
+                      <div className="col-span-4">
                         <Input
                           className="font-normal text-sm"
                           placeholder="Item name"
@@ -603,47 +594,35 @@ const InvoiceItemsTable: React.FC = () => {
                       <div className="col-span-1 flex items-center">
                         <Input
                           className="font-normal text-sm"
-                          placeholder="0"
-                          type="number"
-                          value={lineItem.quantity as any}
-                          onChange={(e) => {
-                            const newLineItems = [...lineItems];
-                            if (e.target.value === '') {
-                              newLineItems[index].quantity = undefined;
-                              setLineItems(newLineItems);
-                              return;
-                            }
-                            newLineItems[index].quantity = Number(
-                              e.target.value,
-                            );
-                            setLineItems(newLineItems);
-                          }}
-                        />
-                      </div>
-                      <div className="col-span-1 flex items-center">
-                        <Input
-                          className="font-normal text-sm"
                           placeholder="0.00"
-                          type="number"
-                          value={lineItem.price as any}
+                          type="text"
+                          value={lineItem.displayAmount || (lineItem.amount !== undefined ? String(lineItem.amount) : '')}
                           onChange={(e) => {
                             const newLineItems = [...lineItems];
-                            if (e.target.value === '') {
-                              newLineItems[index].price = undefined;
+                            const inputValue = e.target.value;
+                            
+                            // Store the display value (with currency symbols)
+                            newLineItems[index].displayAmount = inputValue;
+                            
+                            if (inputValue === '') {
+                              newLineItems[index].amount = undefined;
+                              delete newLineItems[index].displayAmount;
                               setLineItems(newLineItems);
                               return;
                             }
-                            newLineItems[index].price = Number(e.target.value);
+                            
+                            // Extract numeric value from input that may contain currency symbols
+                            const numericValue = inputValue.replace(/[^\d.-]/g, '');
+                            const parsedValue = parseFloat(numericValue);
+                            
+                            if (!isNaN(parsedValue)) {
+                              newLineItems[index].amount = parsedValue;
+                            } else {
+                              newLineItems[index].amount = undefined;
+                            }
                             setLineItems(newLineItems);
                           }}
                         />
-                      </div>
-                      <div className="col-span-1 flex items-center">
-                        <span className="font-normal text-sm">
-                          {formatAsCurrency(
-                            (lineItem.price || 0) * (lineItem.quantity || 0),
-                          )}
-                        </span>
                       </div>
                     </div>
                   )}
@@ -654,8 +633,8 @@ const InvoiceItemsTable: React.FC = () => {
           )}
         </Droppable>
 
-        <div className="grid grid-cols-8 mt-4">
-          <div className="col-span-5">
+        <div className="grid grid-cols-5 mt-4">
+          <div className="col-span-3">
             <button
               id="add-item-button"
               className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
@@ -665,8 +644,7 @@ const InvoiceItemsTable: React.FC = () => {
                   {
                     name: '',
                     description: '',
-                    quantity: 0,
-                    price: 0,
+                    amount: 0,
                   },
                 ]);
               }}
@@ -677,62 +655,9 @@ const InvoiceItemsTable: React.FC = () => {
           </div>
           <div className="col-span-1">
             <span className="font-semibold text-sm uppercase tracking-wider">
-              Subtotal
-            </span>
-          </div>
-          <div className="col-span-1" />
-          <div className="col-span-1">
-            <span className="font-semibold text-sm">
-              {formatAsCurrency(subtotal)}
-            </span>
-          </div>
-        </div>
-        {state.taxEnabled && (
-          <div className="grid grid-cols-8 mt-4">
-            <div className="col-span-5"></div>
-            <div className="col-span-2 flex items-center">
-              <span className="font-semibold text-sm uppercase tracking-wider mr-2">
-                Tax
-              </span>
-              <span className="font-semibold  text-sm uppercase tracking-wider">
-                (
-              </span>
-              <NumericFormat
-                className="font-normal text-sm w-12"
-                value={(taxPercent || 0) * 100}
-                onValueChange={(value) => {
-                  const taxRate = (value.floatValue || 0) / 100;
-                  console.log('taxRate', taxRate);
-                  setState('taxRate', taxRate);
-                }}
-                suffix="%"
-                allowLeadingZeros={false}
-                allowNegative={false}
-                decimalScale={2}
-                fixedDecimalScale
-                customInput={Input}
-              />
-              <span className="font-semibold  text-sm uppercase tracking-wider">
-                )
-              </span>
-            </div>
-            {/* <div className="col-span-1" /> */}
-            <div className="col-span-1">
-              <span className="font-semibold text-sm">
-                {formatAsCurrency(tax)}
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-8 mt-4">
-          <div className="col-span-5"></div>
-          <div className="col-span-1">
-            <span className="font-semibold text-sm uppercase tracking-wider">
               Total
             </span>
           </div>
-          <div className="col-span-1" />
           <div className="col-span-1">
             <span className="font-semibold text-sm">
               {formatAsCurrency(total)}
